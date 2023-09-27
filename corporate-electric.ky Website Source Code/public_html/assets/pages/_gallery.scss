@@ -1,0 +1,161 @@
+.gallary_main{
+	.image{	
+		.g-item{
+			overflow: hidden;
+			text-align: center; 
+			cursor: pointer;
+			img{
+				text-align: center;
+				height: 100%;
+				width: 100%;
+				object-fit: cover;
+			}
+			&:before{
+				position: absolute;
+				content: "";
+				top: 0px;
+				left: 0px;
+				right: 0px;
+				bottom: 0px;
+				background-color: rgba(0,0,0, 0.7);
+				@include css3-prefix ('transition', 'all 0.4s ease-in-out');
+				opacity: 0;
+				z-index: 1;
+				@include css3-prefix ('transform', 'scale(0.9)');
+			}
+			&:hover{
+				&:before{
+					opacity: 1;
+					@include css3-prefix ('transform', 'scale(1)');
+				}				
+				.icon {
+					opacity: 1;
+					@include css3-prefix ('transform', 'scale(1)');				
+				}
+				.title{
+					opacity: 1;
+				}
+			}
+			.icon {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 50%;
+				bottom: 0;
+				margin:0 auto;
+				text-align: center;
+				z-index: 1;
+				height: 50px;
+			    border-radius: 50%;
+			    width: 50px;
+			    background: #707070;
+				color: $ac_white;
+				font-size: $ac_fs_4xl;
+				transform: translate(0, -50%);
+			    opacity: 0;
+				i {
+					position: relative;
+					z-index: 1;
+					top: 20%;
+					@include css3-prefix ('transition', 'all 0.5s ease-in-out');
+				}
+				&:after {
+					position: absolute;
+					content: "";
+					left: 0;
+					right: 0;
+					top: 0;
+					bottom: 0;
+					/* background: rgba($ac_black,0.2); */
+					@include css3-prefix ('transition', 'all 0.5s ease-in-out');				
+				}
+			}
+			.title{
+				position: absolute;
+				font-family: $ac_ff_one;
+				font-size: $ac_fs_5xl;
+				font-weight: $ac_fw_m;
+				line-height: 130%;
+				top: 50%;
+				left: 20px;
+			    right: 20px;
+			    transform: translate(0, -50%);
+    			color: $ac_white;
+    			opacity: 0;
+    			z-index: 1;
+    			letter-spacing: 1px;
+    			@include css3-prefix ('transition', 'all 0.7s ease-in-out');	
+			}
+		}
+	}
+}
+.gallary_main {	
+    .cursor-show {
+    	position: relative;	
+	    .cursor {
+			position: fixed;
+			top: 0;
+			left: 0;
+			display: none;	
+			max-width: 80px;
+			max-height: 80px;	  
+			width: var(--width);
+			height: var(--height);
+			background-color: rgba($ac_a,0.7);
+			/*transform: translate(calc(var(--x) - var(--width) / 2), calc(var(--y) - var(--height) / 2));*/
+			transform: translate(calc(var(--x) - var(--width) / 6), calc(var(--y) - var(--height) / 6));
+			/* transition-duration: 125ms;
+			  transition-timing-function: cubic-bezier(0.39, 0.575, 0.565, 1);
+			  transition-property: width, height, transform; */
+			/*transition: 150ms width cubic-bezier(0.39, 0.575, 0.565, 1),
+			              150ms height cubic-bezier(0.39, 0.575, 0.565, 1),
+			              150ms transform cubic-bezier(0.39, 0.575, 0.565, 1);*/
+			z-index: 2;
+			pointer-events: none;
+			will-change: transform;
+			text-align: center;		
+			@include css3-prefix ('border-radius', '100%');
+			i {
+				color: #fff;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				font-size: 24px;
+				line-height: 80px;
+			}
+		}
+		&:hover {
+			.cursor {
+			    display: block;
+			}
+		}	
+    }    
+}
+
+
+
+/*@media (pointer: fine) {
+  .gallary_main .image .cursor {
+    display: block;
+  }
+}*/
+
+/*.gallary_main .image .cursor::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100px;
+  width: 100px;
+  background-color: rgba(237, 25, 45, 0.1) !important;
+  border-radius: 100% !important;
+  opacity: var(--scale);
+  -webkit-transform: scale(var(--scale));
+          transform: scale(var(--scale));
+  transition: 300ms opacity cubic-bezier(0.39, 0.575, 0.565, 1),
+              300ms transform cubic-bezier(0.39, 0.575, 0.565, 1),
+              150ms border-radius cubic-bezier(0.39, 0.575, 0.565, 1);
+}
+*/

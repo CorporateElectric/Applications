@@ -1,0 +1,28 @@
+body { margin:0; padding:0; background:url(../images/blue-header-bg.jpg) top repeat-x #FFF; }
+a { outline:none; }
+img { border:none;}
+#top-blue-header-bg { background:url(../images/header-image.jpg) top no-repeat; width:100%; float:left;min-height:510px}
+#container { width:981px; margin:auto; }
+.logo { float:left; height:59px; margin:23px 0 0 0; width:100%; padding:0 0 0 22px; }
+.middle-bg { float:left; width:100%; background:url(../images/top-image.png) top no-repeat; }
+.middle-image-section { width:981px; margin:auto; padding:35px 34px 0 35px;}
+.image-area { float:left; width:auto; padding:0 47px 0 0; }
+.image-bg { width:261px; height:173px; background:url(../images/image-bg.png); padding:6px 6px 6px 6px; }
+.option-bg { width:107px; height:24px; background:url(../images/option-bg.png); }
+.option-text { font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:bold; color:#28488a; padding:4px 0 0 10px; width:50px; float:left;}
+.option-text a{ font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:bold; color:#28488a; text-decoration:none; }
+.option-text a:hover{ color:#5795de; }
+
+.number-text { font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:bold; color:#ffffff; padding:4px 0 0 25px; width:20px; float:left;  }
+.number-text a{ font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:bold; color:#ffffff; text-decoration:none;}
+.number-text a:hover{ color:#a8d2fa;}
+
+.spacer-1 { height:40px; clear:both; float:left; width:100%; }
+
+.footer-main-bg { background:url(../images/footer-main-bg.jpg) bottom repeat-x #1878b0; width:100%; float:left;}
+.footer-bg { background:url(../images/footer-image.jpg) bottom no-repeat; width:100%; height:201px; float:left; }
+.footer-area { width:900px; margin:auto; padding:180px 0 0 0; font-family:Arial, Helvetica, sans-serif; color:#ffffff; font-size:11px;}
+.footer-area a{ font-family:Arial, Helvetica, sans-serif; color:#ffffff; font-size:11px; text-decoration:none;}
+.footer-area a:hover{ color:#003e6c;}
+.left { float:left; margin:0 20px 0 0; }
+.right { float:right; }

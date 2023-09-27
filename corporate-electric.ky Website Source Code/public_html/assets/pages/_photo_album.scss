@@ -1,0 +1,197 @@
+.album_page{
+	.container{
+		max-width: 1320px;
+		width: 100%;
+	}
+	.back_to_btn{
+		display: flex;
+	    justify-content: flex-end;
+	    padding-bottom: 40px;
+	    @media (max-width: 999px){
+	    	padding-bottom: 10px;
+	    }
+	    .arrow {
+    		margin: 1em 0;
+		    &:before {
+		        display: inline-block;
+		        padding-left: 8px;
+		        content: "\1F814"; // arrow right unicode
+		        font-size: 30px;
+    			vertical-align: middle;
+		        -webkit-transition: transform 0.3s ease-out;
+		        -moz-transition: transform 0.3s ease-out;
+		        -ms-transition: transform 0.3s ease-out;
+		        -o-transition: transform 0.3s ease-out;
+		        transition: transform 0.3s ease-out;
+		    }
+		    &:hover {
+		        &:before {
+		            -webkit-transform: translateX(-5px);
+		            -moz-transform: translateX(-5px);
+		            -ms-transform: translateX(-5px);
+		            -o-transform: translateX(-5px);
+		            transform: translateX(-5px);
+		        }
+		    }
+		}
+	}
+	.grid-item{
+		width: 25%;
+		.gallery-box{		
+			position: relative;				
+			.g-item{
+				position: relative;
+				display: block;
+				overflow: hidden;
+				text-align: center; 
+				img{
+					text-align: center;
+				}
+				&:before{
+				position: absolute;
+				content: "";
+				top: 10px;
+				left: 10px;
+				right: 10px;
+				bottom: 10px;
+				// width: 100%; 
+				// height: 100%;
+				background-color: rgba(0,0,0, 0.5);
+				@include css3-prefix ('transition', 'all 0.5s ease-in-out');
+				opacity: 0;
+				z-index: 1;
+				transform: scale(0.8);
+			}
+			&:hover{
+				&:before{
+					opacity: 1;
+					transform: scale(1);
+				}				
+				.icon {
+					opacity: 1;
+					@include css3-prefix ('transform', 'scale(1)');				
+				}
+				.title{
+					opacity: 1;
+				}
+			}
+			.icon{
+				z-index: 9;
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				margin:0 auto;
+				text-align: center;
+				display: flex;
+			    justify-content: center;
+			    align-items: center;
+			    @include css3-prefix ('transition', 'all 0.3s ease-in-out');
+			    @include css3-prefix ('transform', 'scale(1.5)');
+			    transform-origin: center center;
+			    opacity: 0;
+				i {
+					position: relative;
+					z-index: 1;
+					color: $ac_white;
+					font-size: $ac_fs_4xl;
+					@include css3-prefix ('transition', 'all 0.3s ease-in-out');
+				}
+				&:after {
+					position: absolute;
+					content: "";
+					left: 0;
+					right: 0;
+					top: 0;
+					bottom: 0;
+					/* background: rgba($ac_black,0.2); */
+					@include css3-prefix ('transition', 'all 0.3s ease-in-out');				
+				}
+				&:hover{
+					opacity: 1;	
+				}
+			}
+			
+				// &:before{
+				// 	position: absolute;
+				// 	content: "";
+				// 	top: 10px;
+				// 	left: 10px;
+				// 	right: 10px;
+				// 	bottom: 10px;
+				// 	// width: 100%; 
+				// 	// height: 100%;
+				// 	background-color: rgba(0,0,0, 0.5);
+				// 	@include css3-prefix ('transition', 'all 0.5s ease-in-out');
+				// 	z-index: -1;
+				// 	transform: scale(0.7);
+				// }
+				// &:hover{
+				// 	&:before{
+				// 		opacity: 1;
+				// 		transform: scale(1);
+				// 	}				
+				// 	.icon {
+				// 		opacity: 1;
+				// 		@include css3-prefix ('transform', 'scale(1)');				
+				// 	}
+				// 	.title{
+				// 		opacity: 1;
+				// 	}
+				// }
+				// .icon {
+				// 	position: absolute;
+				// 	left: 0;
+				// 	right: 0;
+				// 	top: 0;
+				// 	bottom: 0;
+				// 	margin:0 auto;
+				// 	text-align: center;
+				// 	display: flex;
+				//     justify-content: center;
+				//     align-items: center;
+				//     @include css3-prefix ('transition', 'all 0.3s ease-in-out');
+				//     @include css3-prefix ('transform', 'scale(1.5)');
+				//     transform-origin: center center;
+				//     opacity: 0;
+				// 	i {
+				// 		position: relative;
+				// 		z-index: 1;
+				// 		color: $ac_white;
+				// 		font-size: $ac_fs_4xl;
+				// 		@include css3-prefix ('transition', 'all 0.3s ease-in-out');
+				// 	}
+				// 	&:after {
+				// 		position: absolute;
+				// 		content: "";
+				// 		left: 10px;
+				// 		right: 10px;
+				// 		top: 10px;
+				// 		bottom: 10px;
+				// 		transform: scale(.7);
+				// 		background: rgba($ac_black,0.2);
+				// 		@include css3-prefix ('transition', 'all 0.3s ease-in-out');				
+				// 	}
+				// }
+				.title{
+					position: absolute;
+					bottom: 30px;
+	    			left: 30px;
+	    			color: $ac_white;
+	    			opacity:0;
+	    			@media (max-width: 999px){
+	    				bottom: 7px;
+	    				left: 4px;
+	    			}
+				}
+			}
+		}
+	}
+}
+.fancybox-caption__body{
+	line-height: 150%;
+}
+
+
+

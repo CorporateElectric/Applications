@@ -1,0 +1,341 @@
+.innerbanner_custom_02 {
+	padding: 155px 0 0 0;
+	@media (max-width: 1199px){
+		padding: 40px 0 0 0;
+	}
+	.container{
+		max-width: 1718px;
+		width: 100%;
+		margin-right: 65px;
+	}
+	.thumbnail-container {
+		background: #f7f7f7;
+	}
+	&.banner_title{
+		.residential{
+		max-width: 100%;}
+	}
+	.residential{
+		max-width: 514px;
+		@media (max-width: 999px){
+			margin-bottom: 20px;
+		}
+		.title{
+			width: 100%;
+			font-family: $ac_ff_one;
+			font-weight: $ac_fw_sb;
+			font-size: $ac_fs_d_55 - 1px;
+			color: $ac_black;
+			line-height: 110%;
+			margin-top: 25px;
+			@media (max-width: 1499px){
+				font-size: $ac_fs_6xl + 1px;
+			}
+			@media (max-width: 1199px){
+				font-size: $ac_fs_3xl + 2px;
+				margin-top:0;
+			}
+		}
+		p{
+			font-family: $ac_ff_two;
+			font-size: $ac_fs_lg + 1px;
+			font-weight: $ac_fw_l;
+			color: $ac_light;
+			width: 100%;
+			padding: 37px 0 52px 0;
+			margin-top: 0;
+			line-height: 130%;
+			@media (max-width: 1499px){
+				padding: 25px 0 35px 0;
+			}
+			@media (max-width: 1199px){
+				padding: 15px 0 17px 0;
+			}
+			@media (max-width: 767px){
+				font-size: $ac_fs_md;
+			}
+		}
+		.ac-btn{
+			margin-bottom: 55px;
+		}
+	}
+}
+
+.service_detail{
+	padding: 150px 0 130px 0;
+	@media (max-width: 1499px){
+		padding: 75px 0 65px 0;
+	}
+	@media (max-width: 1199px){
+		padding: 30px 0 30px 0;
+	}
+	.container{
+		max-width: 1230px;
+		width: 100%;
+	}
+	.service_box {
+	    display: flex;
+	    justify-content: space-between;
+	    // padding-left: 26px;
+	    @media (max-width: 575px){
+	    	flex-direction: column;
+	    	padding-left: 0;
+	    }
+	    .ser_content{
+	    	max-width: 600px;
+			width: 100%;
+			padding: 0 30px; 
+			justify-content: center;
+		    display: flex;
+		    flex-direction: column;
+		    @media (max-width: 575px){
+		    	padding: 0;
+		    	margin-bottom: 20px;
+		    }
+			.title{
+				font-family: $ac_ff_one;
+				font-size: $ac_fs_6xl + 5px;
+				font-weight: $ac_fw_sb;
+				color: $ac_black;
+				@media (max-width: 1499px){
+					font-size: $ac_fs_6xl + 1px;
+				}
+				@media (max-width: 1199px){
+					font-size: $ac_fs_3xl + 2px;
+				}
+			}
+		    p{
+			    margin-top: 25px;
+			    font-size: $ac_fs_lg + 1px;
+			    font-family: $ac_ff_two;
+			    font-weight: $ac_fw_l;
+			    color: $ac_light;
+			    max-width: 437px;
+			    width: 100%; 
+			    @media (max-width: 575px){
+			    	font-size: $ac_fs_md;
+			    }
+			}
+		}
+		.ser_image{
+			max-width: calc(100% - 600px);
+    		width: 100%;
+    		@media (max-width: 1199px){
+				max-width: calc(100% - 400px);
+			}
+			@media (max-width: 575px){
+				max-width: 100%;
+			}
+			.thumbnail-container{
+				padding-bottom: 66.66%;
+			    overflow: hidden;
+			    position: relative;
+			    width: 100%;
+			    .thumbnail{
+			    	position: absolute;
+			    	width: 100%;
+				    height: 100%;
+				    padding: 0;
+				    margin: 0;
+				    display: block; 
+				    img{
+				    	width: auto;
+				    }
+			    }
+			}
+		}
+		&:nth-child(2n) {
+		    flex-direction: row-reverse;
+		    @media (max-width: 575px){
+		    	flex-direction: column-reverse;
+		    }
+		}
+		+.service_box{
+			margin-top: 100px;
+			@media (max-width: 1499px){
+				margin-top: 50px;
+			}
+		}
+	}
+	
+}
+
+.our_expertise{
+	width: 100%;
+	height: 516px;
+	background-color: $ac_bg_clr;
+	position: relative;
+	padding: 100px 0;
+	margin-bottom: 12px;
+	@media(max-width:1199px){
+		padding: 50px 0;
+		height: 400px;
+	}
+	@media (max-width: 575px){
+		height: 540px;
+	}
+	.container{
+		max-width: 650px;
+		width: 100%;
+	}
+	.expertise{
+		.title{
+			font-family: $ac_ff_one;
+			font-size: $ac_fs_6xl + 5px;
+			font-weight: $ac_fw_sb;
+			color: $ac_black;
+			@media (max-width: 1499px){
+				font-size: $ac_fs_6xl + 1px;
+			}
+			@media (max-width: 1199px){
+				font-size: $ac_fs_3xl + 2px;
+			}
+		}
+		p{
+			font-family: $ac_ff_two;
+			font-size: $ac_fs_lg + 1px;
+			font-weight: $ac_fw_l;
+			color: $ac_light;
+			margin-top: 24px;
+			@media (max-width: 1499px){
+				font-size: $ac_fs_md;
+			}
+		}
+	}
+	.expertise_box{
+		margin-top: 39px;
+		.thumbnail-container{
+			padding-bottom: 34.66%;
+		    .thumbnail{
+		    	position: absolute;
+		    	width: 100%;
+			    height: 100%;
+			    padding: 0;
+			    margin: 0;
+			    display: block; 
+		    }
+		}
+	}
+}
+
+.accordion_section{
+	padding: 12px 0 0px;
+	@media (max-width: 1499px){
+		padding: 0 0 0px;
+	}
+	@media(max-width:1199px){
+		padding: 0px 0;
+	}
+	.container{
+		max-width: 1224px;
+		width: 100%;
+	}
+	.left_content{
+		@media (max-width: 999px){
+			margin-bottom: 20px;
+		}
+		.title_sm{
+			font-family: $ac_ff_one;
+			font-size: $ac_fs_3xl + 2px;
+			font-weight: $ac_fw_r;
+			color: $ac_gr_light;
+			margin-bottom: 10px;
+			@media (max-width: 1499px){
+				font-size: $ac_fs_2xl;
+			}
+		}
+		.title{
+			font-family: $ac_ff_one;
+			font-size: $ac_fs_d_50;
+			font-weight: $ac_fw_sb;
+			color: $ac_black;
+			max-width: 445px;
+    		width: 100%;
+    		line-height: 120%;
+    		@media (max-width: 1499px){
+    			font-size: $ac_fs_6xl + 1px;
+    		}
+    		@media (max-width: 1199px){
+    			font-size: $ac_fs_3xl + 2px;
+    			max-width: 370px;
+    		}
+		}
+	}
+	.right_content{
+		max-width: 650px;
+		width: 100%;
+		#accordion{
+			.card{
+				border: none;
+				.card-header{
+					background-color: $ac_white;
+					padding: 25px 0 30px 0;
+					border-bottom: 1px solid $ac_br;
+					@media (max-width: 1199px){
+						padding: 10px 0;
+					}
+					.btn{
+						padding: 0;
+						&:focus{
+							box-shadow: none;
+						}
+					}
+					.btn-link{
+						font-family: $ac_ff_one;
+						font-size: $ac_fs_3xl;
+						font-weight: $ac_fw_m;
+						text-decoration: none;
+						color: $ac_black;
+						text-align: left;
+						@media (max-width: 1499px){
+			    			font-size: $ac_fs_2xl;
+			    		}
+			    		@media (max-width: 1199px){
+			    			font-size: $ac_fs_xl;
+			    		}
+					}
+				}
+				.card-body{
+					padding: 20px 0;
+					@media (max-width: 1199px){
+						padding: 10px 0;
+					}
+					p{
+						font-family: $ac_ff_two;
+						font-size: $ac_fs_lg + 1px;
+						font-weight: $ac_fw_l;
+						line-height: 150%;
+						@media (max-width: 1499px){
+							font-size: $ac_fs_md;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

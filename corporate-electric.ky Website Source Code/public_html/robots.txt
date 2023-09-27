@@ -1,0 +1,30 @@
+User-Agent: *
+Disallow: /powerpanel
+Disallow: /powerpanel/
+Disallow: /old-code
+Disallow: /old-code/
+
+User-Agent: Mediapartners-Google
+Allow: /
+
+User-Agent: Googlebot
+Allow: /
+
+User-Agent: Adsbot-Google
+Allow: /
+
+User-Agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-Mobile
+Allow: /
+
+User-agent: YahooSeeker/M1A1-R2D2
+Allow: /
+
+User-agent: MSNBOT-MOBILE
+Allow: /
+
+
+Sitemap: https://www.corporate-electric.ky/sitemap.xml
+

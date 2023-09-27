@@ -1,0 +1,139 @@
+@extends('layouts.app')
+@section('content')
+@if(!empty($blogs))
+<section class="innerbanner_custom_02" data-scroll-section>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-5 col-md-12">
+                <div class="residential">
+                    @php
+                    $var_blog=\App\Helpers\static_block::get_page_title('2');
+                    @endphp
+                    <h1 class="title">{{ $var_blog['data']->Title }}</h1>
+                    <ul class="ac-breadcrumb">
+                        <li><a href="{{ url('/') }}" class="" title="Home">Home</a></li>
+                        <li>{{ $var_blog['data']->Title }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section data-scroll-section>
+    <div class="inner-page-container events_detail blog_detail"> 
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="back_to_btn">
+                        @php $var_blog=\App\Helpers\static_block::get_page_title('2');@endphp
+                        <a href="{{ url($var_blog['data']->varAlias) }}" class="arrow" title="Back to listing">Back to listing</a>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-8 pr-lg-5">
+                    <div class="blog_title">
+                        <div>{!! $blogs->varTitle !!}</div>
+                        <div class="blog_image">
+                            <div class="thumbnail-container">
+                                <div class="thumbnail">
+                                    <picture>
+                                        <source type="image/webp" data-srcset="{!! App\Helpers\LoadWebpImage::resize($blogs->fkIntImgId,850,567) !!}" srcset="{!! url('assets/images/loader.gif') !!}">
+                                        <img class="lazy" data-src="{{ App\Helpers\resize_image::resize($blogs->fkIntImgId,850,567) }}" src="{!! url('assets/images/loader.gif') !!}" alt="{{ htmlspecialchars_decode($blogs->varTitle) }}" title="{{ htmlspecialchars_decode($blogs->varTitle) }}">
+                                    </picture>
+                                </div>
+                            </div>
+                        </div>
+                        @php $var_blog=\App\Helpers\static_block::get_page_title('2');@endphp
+                        <!-- <ul class="ac-breadcrumb">
+                            <li><a href="{{ url('/') }}" class="" title="Home">Home</a></li>
+                            <li><a>{{ $var_blog['data']->Title }}</a></li>
+                        </ul> -->
+                    </div>
+                    <div class="share dropdown">
+                        <!-- <a href="javascript: void(0)" class="social_link dropdown-toggle" title="Share On Social Media" data-toggle="dropdown"><i class="fa fa-share-alt"></i></a> -->
+                        <div class="share-media a2a_kit" data-a2a-url="{{ Request::url() }}">
+                            <ul>
+                                <li><a class="a2a_button_facebook" title="Share on Facebook"><i class="fa fa-facebook"></i></a></li>
+                                <li><a class="a2a_button_twitter" title="Share on Twitter"><i class="fa fa-twitter"></i></a></li>
+                                <li><a class="a2a_button_whatsapp" title="Share on WhatsApp"><i class="fa fa-whatsapp"></i></a></li>
+                                <li><a class="a2a_button_linkedin" title="Share on Linkedin"><i class="fa fa-linkedin"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!--                    @if((null!==Config::get('Constant.SOCIAL_FB_LINK') && strlen(Config::get('Constant.SOCIAL_FB_LINK')) > 0) || (null!==Config::get('Constant.SOCIAL_INSTAGRAM_LINK') && strlen(Config::get('Constant.SOCIAL_INSTAGRAM_LINK')) > 0) || (null!==Config::get('Constant.SOCIAL_LINKDIN_LINK') && strlen(Config::get('Constant.SOCIAL_LINKDIN_LINK')) > 0))
+                                        <div class="social_icon">
+                                            <ul>
+                                                @if(null!==(Config::get('Constant.SOCIAL_FB_LINK')) && strlen(Config::get('Constant.SOCIAL_FB_LINK')) > 0)
+                                                <li><a href="{{ Config::get('Constant.SOCIAL_FB_LINK') }}" title="Follow Us On Facebook" target="_blank"><i class="n-icon" data-icon="s-facebook"></i></a></li>
+                                                @endif
+                                                @if(null!==(Config::get('Constant.SOCIAL_INSTAGRAM_LINK')) && strlen(Config::get('Constant.SOCIAL_INSTAGRAM_LINK')) > 0)
+                                                <li><a href="{{ Config::get('Constant.SOCIAL_INSTAGRAM_LINK') }}" title="Follow Us On Instagram" target="_blank"><i class="n-icon" data-icon="s-instagram-logo"></i></a></li>
+                                                @endif
+                                                @if(null!==(Config::get('Constant.SOCIAL_LINKEDIN_LINK')) && strlen(Config::get('Constant.SOCIAL_LINKEDIN_LINK')) > 0)
+                                                <li><a href="{{ Config::get('Constant.SOCIAL_LINKEDIN_LINK') }}" title="Follow Us On LinkedIn" target="_blank"><i class="n-icon" data-icon="s-linkedin-logo"></i></a></li>
+                                                @endif
+                                                @if(null!==(Config::get('Constant.SOCIAL_YOUTUBE_LINK')) && strlen(Config::get('Constant.SOCIAL_YOUTUBE_LINK')) > 0)
+                                                <li><a href="{{ Config::get('Constant.SOCIAL_YOUTUBE_LINK') }}" title="Follow Us On Youtube" target="_blank"><i class="n-icon" data-icon="s-youtub-logo"></i></a></li>
+                                                @endif
+                                            </ul>
+                                        </div>
+                                        @endif-->
+                    <div class="post_content">
+                        @if(isset($txtDescription) && !empty($txtDescription))
+                        {!! $txtDescription !!}
+                        @else
+                        <p>{{ $blogs->varShortDescription }}</p>
+                        @endif
+                    </div>
+                </div>
+                @if(!empty($PopularBlogs))
+                <div class="col-lg-4">
+                    <div class="right_panel">
+                        <div class="get_quote" data-scroll data-scroll-direction="bottom" data-scroll-speed="1">
+                            <span class="shadow"></span>
+                            <div>
+                                <div class="title"><h2 class="sub_top_title">Popular</h2></div>
+                                <hr>
+                                @foreach($PopularBlogs as $index => $Popular)
+                                <div class="row align-items-center">
+                                    <div class="col-8">
+                                        <a href="{{ url('blog/'.$Popular->varAlias) }}" title="{{$Popular->varTitle}}">
+                                            <div class="sm_title">
+                                                {{$Popular->varTitle}}
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="image">
+                                            <div class="thumbnail-container">
+                                                <div class="thumbnail">
+                                                    <a href="{{ url('blog/'.$Popular->varAlias) }}" title="{{$Popular->varTitle}}">
+                                                        <picture>
+                                                            <source type="image/webp" data-srcset="{!! App\Helpers\LoadWebpImage::resize($Popular->fkIntImgId,98,65) !!}" srcset="{!! App\Helpers\LoadWebpImage::resize($Popular->fkIntImgId,98,65) !!}">
+                                                            <img class="lazy" data-src="{{ App\Helpers\resize_image::resize($Popular->fkIntImgId,98,65) }}" src="{{ App\Helpers\resize_image::resize($Popular->fkIntImgId,98,65) }}" alt="{!! ucwords($Popular->varTitle) !!}" title="{!! ucwords($Popular->varTitle) !!}">
+                                                        </picture>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+@if(!Request::ajax())
+@section('footer_scripts')
+
+@endsection
+@endsection
+@endif

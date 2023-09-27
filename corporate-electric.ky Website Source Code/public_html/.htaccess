@@ -1,0 +1,367 @@
+<IfModule mod_rewrite.c>
+    <IfModule pagespeed_module>
+      ModPagespeed off
+    </IfModule>
+    ModPagespeedRewriteLevel PassThrough
+    ModPagespeedEnableFilters combine_css,extend_cache,rewrite_images
+    ModPagespeedEnableFilters rewrite_css,rewrite_javascript
+    ModPagespeedEnableFilters combine_javascript
+    ModPagespeedEnableFilters defer_javascript
+    ModPagespeedEnableFilters remove_comments
+    ModPagespeedEnableFilters collapse_whitespace
+    ModPagespeedEnableFilters insert_dns_prefetch
+    ModPagespeedEnableFilters lazyload_images
+    ModPagespeedEnableFilters inline_preview_images
+    ModPagespeedEnableFilters resize_rendered_image_dimensions
+    ModPagespeedEnableFilters insert_image_dimensions
+    ModPagespeedEnableFilters make_google_analytics_async
+    ModPagespeedEnableFilters canonicalize_javascript_libraries
+    ModPagespeedEnableFilters inline_google_font_css
+    ModPagespeedEnableFilters convert_jpeg_to_webp
+    ModPagespeedEnableFilters convert_to_webp_lossless
+    ModPagespeedEnableFilters recompress_images
+    ModPagespeedEnableFilters extend_cache
+    ModPagespeedEnableFilters hint_preload_subresources
+    ModPagespeedEnableFilters in_place_optimize_for_browser
+    # ModPagespeedEnableFilters resize_mobile_images
+    ModPagespeedEnableFilters prioritize_critical_css
+    ModPagespeedEnableFilters flatten_css_imports
+    ModPagespeedEnableFilters rewrite_style_attributes_with_url,rewrite_css,rewrite_images
+    ModPagespeedEnableFilters add_instrumentation
+    ModPagespeedEnableFilters make_show_ads_async
+    ModPagespeedEnableFilters make_google_analytics_async
+    ModPagespeedEnableFilters canonicalize_javascript_libraries
+    ModPagespeedEnableFilters combine_heads
+    ModPagespeedEnableFilters convert_meta_tags
+    ModPagespeedEnableFilters dedup_inlined_images
+    ModPagespeedEnableFilters include_js_source_maps
+    ModPagespeedEnableFilters inline_import_to_link
+    ModPagespeedEnableFilters fallback_rewrite_css_urls
+    ModPagespeedEnableFilters rewrite_style_attributes,rewrite_css
+    ModPagespeedUseExperimentalJsMinifier on
+    ModPagespeedEnableFilters outline_css
+    ModPagespeedCssOutlineMinBytes 3000
+    ModPagespeedEnableFilters outline_javascript
+    ModPagespeedJsOutlineMinBytes 3000
+    <IfModule mod_negotiation.c>
+        Options -MultiViews
+    </IfModule>
+    RewriteEngine On
+    # RewriteRule ^sitemap\.xml/?$ sitemap.php
+    # RewriteCond %{HTTPS} !=on
+    # RewriteRule ^(.*)$ https://www.corporate-electric.ky/$1 [L,R=301]
+    # RewriteCond %{HTTP_HOST} !^www\.
+    # RewriteRule (.*) https://www.%{HTTP_HOST}/$1 [R,L]
+    # RewriteCond %{REQUEST_FILENAME} -f
+    # RewriteRule .? - [L]
+    # RewriteRule ^index\.php(/(.*)|$) %{ENV:BASE}/$2 [R=301,L]
+    # RewriteRule .? %{ENV:BASE}/index.php [L]
+    RewriteCond %{HTTPS} off
+		RewriteRule (.*) https://corporate-electric.ky [L,R=301]
+		RewriteCond %{HTTP_HOST} !^www\. [NC]
+		RewriteRule (.*) https://www.corporate-electric.ky [L,R=301]
+    RewriteRule ^sitemap\.xml/?$ sitemap.php
+    RewriteCond %{REQUEST_URI}::$1 ^(/.+)/(.*)::\2$
+    RewriteRule ^(.*) - [E=BASE:%1]
+    RewriteCond %{ENV:REDIRECT_STATUS} ^$
+    RewriteRule ^index\.php(/(.*)|$) %{ENV:BASE}/$2 [R=301,L]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule .? - [L]
+    RewriteRule .? %{ENV:BASE}/index.php [L]
+    #Services Page
+    Redirect 301 /services/data-communications/ https://www.corporate-electric.ky/our-services/data-cabling-contractor-in-cayman-islands
+    Redirect 301 /services/design-install-and-maintain-standby-generators-in-cayman-islands/ https://www.corporate-electric.ky/our-services/authorized-distributor-of-generators-in-cayman
+    Redirect 301 /services/residential-and-commercial-electrical-services-in-cayman-islands/ https://www.corporate-electric.ky/our-services/electrical-services-in-cayman
+    Redirect 301 /services/fire-alarm-systems-installation-and-maintenance-in-cayman-islands/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /services/fire-suppression-systems-in-cayman-islands/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /services/authorised-distributor-of-fire-extinguisher-in-cayman-islands/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /services/mepf-design-and-consultancy-services-in-cayman-islands/ https://www.corporate-electric.ky/our-services/mepf-designs-in-the-cayman-islands
+    Redirect 301 /services/data-cabling-contractor-in-cayman-islands/ https://www.corporate-electric.ky/our-services/data-cabling-contractor-in-cayman-islands
+#    #Redirect 301 /services/mepf-design-and-consultancy-services-in-cayman-islands/ https://www.corporate-electric.ky/our-services/mepf-designs-in-the-cayman-islands/
+    Redirect 301 /services/lutron-lighting-control-systems-in-cayman-islands/ https://www.corporate-electric.ky/our-services/lighting-and-shade-automation-services-in-cayman
+    Redirect 301 /services/home-and-office-automation-systems-installation-in-cayman-islands/ https://www.corporate-electric.ky/our-services/home-and-office-automation-for-smart-living-in-cayman
+    Redirect 301 /services/liftmaster-garage-door-openers-in-cayman-islands/ https://www.corporate-electric.ky/our-services/liftmaster-gate-openers-in-cayman
+    Redirect 301 /services/residential-and-commercial-gate-operator-in-cayman-islands/ https://www.corporate-electric.ky/our-services/liftmaster-gate-openers-in-cayman
+    Redirect 301 /services/ups-systems-in-cayman-islands/ https://www.corporate-electric.ky/our-services/ups-in-cayman-islands
+    Redirect 301 /our-services/battery-power-storage https://www.corporate-electric.ky/our-services/generac-pwrcell-energy-storage-system-in-cayman
+    Redirect 301 /services/solar-powered-and-led-lighting-solutions-in-cayman-islands/ https://www.corporate-electric.ky/our-services
+    Redirect 301 /services/solar-powered-swimming-pool-pumps-in-cayman-islands/ https://www.corporate-electric.ky/our-services
+    Redirect 301 /services/lightning-protection-in-cayman-islands/ https://www.corporate-electric.ky/our-services
+     Redirect 301 /services/surge-protection-devices-in-cayman-islands/ https://www.corporate-electric.ky/our-services/surge-protection-devices-installation-in-cayman
+
+
+
+    #Other Pages
+    Redirect 301 /about-us/ https://www.corporate-electric.ky/about-corporate-electric-cayman
+    
+    Redirect 301 /photo-gallery/ https://www.corporate-electric.ky/
+    Redirect 301 /testimonials/testimonials-3/ https://www.corporate-electric.ky/testimonials
+    Redirect 301 /testimonials/testimonial/ https://www.corporate-electric.ky/testimonials
+    Redirect 301 /home/ups/ https://www.corporate-electric.ky/our-services/ups-in-cayman-islands
+    Redirect 301 /career/ https://www.corporate-electric.ky/jobs-at-corporate-electric
+    Redirect 301 /request-visit/ https://www.corporate-electric.ky/request-a-service-visit
+    Redirect 301 /gallery/ https://www.corporate-electric.ky/
+    Redirect 301 /privacy-removal/ https://www.corporate-electric.ky/data-removal-lead
+    Redirect 301 /site-map/ https://www.corporate-electric.ky/site-map
+    Redirect 301 /blog/page/2/ https://www.corporate-electric.ky/blog
+    Redirect 301 /photovoltaics-2/ https://www.corporate-electric.ky
+    Redirect 301 /fg-wilson-2/ https://www.corporate-electric.ky
+    Redirect 301 /pwrcell-brochure.pdf https://www.corporate-electric.ky
+    Redirect 301 /solar-car-charger/ https://www.corporate-electric.ky/other-services
+    Redirect 301 /about-corporate-electric-caymansadfsad-2/ https://www.corporate-electric.ky/about-corporate-electric-cayman
+    Redirect 301 /fire-logos-animation04-2/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /about-corporate-electric-caymanabout-us-3/ https://www.corporate-electric.ky/about-corporate-electric-cayman
+    Redirect 301 /MK-CO-GN-DO-EN-181.pdf https://www.corporate-electric.ky
+    Redirect 301 /carousels-category/solar-powered-low-energy-lighting-carousel/ https://www.corporate-electric.ky
+    Redirect 301 /wp-content/uploads/2017/04/Kohler-Marine-Pocket-Guide.pdf https://www.corporate-electric.ky
+    Redirect 301 /blog/arming-our-team-with-intimate-training-sessions-on-loto-and-data-cableattachment/6/ https://www.corporate-electric.ky/blog
+    Redirect 301 /blog/arming-our-team-with-intimate-training-sessions-on-loto-and-data-cableattachment/3/ https://www.corporate-electric.ky/blog
+    Redirect 301 /our-services/liftmaster-gate-openers-in-cayman/sl3000u_detail-2/ https://www.corporate-electric.ky/other-services
+    Redirect 301 /our-services/data-cabling-contractor-in-cayman-islands/data-and-comm-2/ https://www.corporate-electric.ky/other-services
+    Redirect 301 /our-services/mepf-designs-in-the-cayman-islands/mepf-design-3/ https://www.corporate-electric.ky/our-services/mepf-designs-in-the-cayman-islands
+    Redirect 301 /our-services/fire-protection-systems-installation-and-maintenance-in-cayman/img_7335-firealaram/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /our-services/fire-protection-systems-installation-and-maintenance-in-cayman/fire-alarm-3/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+    Redirect 301 /blog/why-it-is-important-to-maintain-your-portable-backup-generatorkohler-pro-5-2-kw-120-240v-electric-start-portable-generator-3425867891/ https://www.corporate-electric.ky/blog
+    Redirect 301 /services_categories/homepage/ https://www.corporate-electric.ky
+    
+    #Blog Pages
+    Redirect 301 /home-automation-gives-you-simplicity/ https://www.corporate-electric.ky/blog/home-automation-gives-you-what-you-want-simplicity
+    Redirect 301 /coping-mechanisms-lockdown/ https://www.corporate-electric.ky/blog/coping-mechanisms-during-the-lockdown
+    Redirect 301 /development-high-octane-g-drive-engine-liebherr-kohler/ https://www.corporate-electric.ky/blog/development-of-high-octane-g-drive-engine-by-liebherr-and-kohler
+    Redirect 301 /a-year-of-progress-the-highlight-of-our-achievements-in-2018/ https://www.corporate-electric.ky/blog/a-year-of-progress-the-highlight-of-our-achievements-in-2018
+    Redirect 301 /earth-day-cleanup-2019-celebrating-place-call-home/ https://www.corporate-electric.ky/blog/earth-day-cleanup-2019-celebrating-the-place-we-call-home
+    Redirect 301 /arming-team-intimate-training-sessions-loto-data-cable/ https://www.corporate-electric.ky/blog/arming-our-team-with-intimate-training-sessions-on-loto-and-data-cable
+    Redirect 301 /striding-towards-growth-corporate-electrics-building-expansion/ https://www.corporate-electric.ky/blog/striding-towards-the-growth-corporate-electric-s-building-expansion
+    Redirect 301 /lunch-learn-understanding-power-quality-issues-cayman-islands-informative-session-cifma-eaton-corporate-electric/ https://www.corporate-electric.ky/blog/lunch-learn-understanding-power-quality-issues-in-the-cayman-islands
+    Redirect 301 /know-facts-coronavirus-disease-2019-covid-19/ https://www.corporate-electric.ky/blog/know-the-facts-about-coronavirus-disease-2019-covid-19
+    Redirect 301 /get-high-quality-panduit-products-us-cayman-islands/ https://www.corporate-electric.ky/blog/get-high-quality-panduit-products-from-us-in-the-cayman-islands
+    Redirect 301 /5-fire-safety-tips-ensure-safe-christmas/ https://www.corporate-electric.ky/blog/5-fire-safety-tips-to-ensure-a-safe-christmas
+    Redirect 301 /important-notice-contractors/ https://www.corporate-electric.ky/blog/important-notice-for-all-contractors
+    Redirect 301 /post-cedia-trade-show-wrap/ https://www.corporate-electric.ky/blog/post-cedia-trade-show-wrap-up
+    Redirect 301 /developments-superyacht-generators-board-power/ https://www.corporate-electric.ky/blog/developments-in-superyacht-generators-and-on-board-power
+    Redirect 301 /mepf-design-cayman-islands/ https://www.corporate-electric.ky/blog/mepf-design-cayman-islands
+    Redirect 301 /kohler-liebherr-announce-new-large-diesel-engines/ https://www.corporate-electric.ky/blog/kohler-liebherr-announce-new-large-diesel-engines
+    Redirect 301 /hurricane-preparedness-guidelines-residing-cayman-islands/ https://www.corporate-electric.ky/blog/hurricane-preparedness-guidelines-in-the-cayman-islands
+    Redirect 301 /are-you-really-maintaining-your-fire-alarm-system/ https://www.corporate-electric.ky/blog/are-you-really-maintaining-your-fire-alarm-system
+    Redirect 301 /why-it-is-important-to-maintain-your-portable-backup-generator/ https://www.corporate-electric.ky/blog/why-it-is-important-to-maintain-your-portable-backup-generator
+    Redirect 301 /does-your-generator-run-under-loaded/ https://www.corporate-electric.ky/blog/does-your-generator-run-under-loaded
+    Redirect 301 /why-is-fire-extinguisher-maintenance-important/ https://www.corporate-electric.ky/blog/why-is-fire-extinguisher-maintenance-important
+    Redirect 301 /services/ https://www.corporate-electric.ky/our-services/
+    Redirect 301 /page/2/ https://www.corporate-electric.ky/
+    Redirect 301 /gallery/page/2/ https://www.corporate-electric.ky/
+    Redirect 301 /home/fire-2/ https://www.corporate-electric.ky/our-services/fire-protection-systems-installation-and-maintenance-in-cayman
+</IfModule>
+<If "%{THE_REQUEST} =~ m#\s/+powerpanel[/?\s]#">
+<IfModule mod_headers.c>
+Header always set X-XSS-Protection "0"
+Header always set X-Frame-Options "sameorigin"
+Header set X-Content-Type-Options nosniff
+Header set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
+#Header always set Content-Security-Policy "frame-ancestors 'self' 'unsafe-inline'"
+Header set Feature-Policy "camera 'none'; fullscreen 'self'; geolocation *; microphone 'self' https://www.corporate-electric.ky/*"
+Header always set Permissions-Policy "sync-xhr=(self),accelerometer=(self),gyroscope=(self),magnetometer=(self),payment=(self),usb=(self)"
+Header always set Referrer-Policy "same-origin"
+</IfModule>
+</If>
+<Else>
+<IfModule mod_headers.c>
+Header always set Access-Control-Allow-Origin: *
+Header always set Access-Control-Request-Method "GET, HEAD, POST, OPTIONS, TRACE, DELETE"
+Header always set X-Frame-Options "DENY"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" "expr=%{HTTPS} == 'on'"
+Header always edit Set-Cookie (.*) "$1; SameSite=Strict; Secure; HTTPOnly"
+Header always set Referrer-Policy "same-origin"
+#Header always set Content-Security-Policy "frame-ancestors 'self' 'unsafe-inline'"
+Header always set Permissions-Policy "sync-xhr=(self),accelerometer=(self),gyroscope=(self),magnetometer=(self),payment=(self),usb=(self)"
+Header set X-Permitted-Cross-Domain-Policies "none"
+Header set Feature-Policy "camera 'none'; fullscreen 'self'; geolocation *; microphone 'self' https://www.corporate-electric.ky/*"
+</IfModule>
+</Else>
+AddDefaultCharset UTF-8
+<ifModule mod_gzip.c>
+  mod_gzip_on Yes
+  mod_gzip_dechunk Yes
+  mod_gzip_item_include file \.(html?|txt|css|js|php|pl|woff|eot|woff2)$
+  mod_gzip_item_include mime ^application/x-javascript.*
+  mod_gzip_item_include mime ^text/.*
+  mod_gzip_item_exclude rspheader ^Content-Encoding:.*gzip.*
+  mod_gzip_item_exclude mime ^image/.* 
+  mod_gzip_item_include handler ^cgi-script$
+</ifModule>
+<IfModule mod_expires.c>
+# Enable expirations
+ExpiresActive On
+# Default directive
+ExpiresDefault "access plus 1 month"
+# My favicon
+ExpiresByType image/x-icon "access plus 1 year"
+# Images
+ExpiresByType image/gif "access plus 1 month"
+ExpiresByType image/png "access plus 1 month"
+ExpiresByType image/jpg "access plus 1 month"
+ExpiresByType image/jpeg "access plus 1 month"
+# CSS
+ExpiresByType text/css "access plus 1 year"
+# Javascript
+ExpiresByType application/javascript "access plus 1 year"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch ".(js|css|xml|gz|html|woff2|png)$">
+    Header append Vary: Accept-Encoding
+  </FilesMatch>
+</IfModule>
+<FilesMatch "\.(ico|pdf|flv|jpg|jpeg|png|gif|js|css|swf)(\.gz)?$">
+    Header set Expires "Thu, 15 Apr 2020 20:00:00 GMT"
+    Header unset ETag
+    FileETag None 
+</FilesMatch>
+<filesMatch ".(ico|pdf|flv|jpg|jpeg|webp|png|gif|js|css|swf|svg|woff2)$">
+    Header set Cache-Control "max-age=31557600, public"
+</filesMatch>
+# Header set Strict-Transport-Security "max-age=31557600" env=HTTPS
+<IfModule mod_deflate.c>
+# Compress HTML, CSS, JavaScript, Text, XML and fonts
+AddOutputFilterByType DEFLATE application/javascript
+AddOutputFilterByType DEFLATE application/rss+xml
+AddOutputFilterByType DEFLATE application/vnd.ms-fontobject
+AddOutputFilterByType DEFLATE application/x-font
+AddOutputFilterByType DEFLATE application/x-font-opentype
+AddOutputFilterByType DEFLATE application/x-font-otf
+AddOutputFilterByType DEFLATE application/x-font-truetype
+AddOutputFilterByType DEFLATE application/x-font-ttf
+AddOutputFilterByType DEFLATE application/x-javascript
+AddOutputFilterByType DEFLATE application/xhtml+xml
+AddOutputFilterByType DEFLATE application/xml
+AddOutputFilterByType DEFLATE font/opentype
+AddOutputFilterByType DEFLATE font/otf
+AddOutputFilterByType DEFLATE font/ttf
+AddOutputFilterByType DEFLATE image/svg+xml
+AddOutputFilterByType DEFLATE image/x-icon
+AddOutputFilterByType DEFLATE text/css
+AddOutputFilterByType DEFLATE text/html
+AddOutputFilterByType DEFLATE text/javascript
+AddOutputFilterByType DEFLATE text/plain
+AddOutputFilterByType DEFLATE text/xml
+ 
+# Remove browser bugs (only needed for really old browsers)
+BrowserMatch ^Mozilla/4 gzip-only-text/html
+BrowserMatch ^Mozilla/4\.0[678] no-gzip
+BrowserMatch \bMSIE !no-gzip !gzip-only-text/html
+Header append Vary User-Agent
+</IfModule>
+
+## EXPIRES CACHING ##
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access 1 year"
+    ExpiresByType image/jpeg "access 1 year"
+    ExpiresByType image/gif "access 1 year"
+    ExpiresByType image/png "access 1 year"
+    ExpiresByType image/webp "access 1 year"
+    ExpiresByType image/svg "access 1 year"
+    ExpiresByType text/css "access 1 month"
+    ExpiresByType text/html "access 1 month"
+    ExpiresByType text/svg "access 1 month"
+    ExpiresByType application/pdf "access 1 month"
+    ExpiresByType text/x-javascript "access 1 month"
+    ExpiresByType application/x-shockwave-flash "access 1 month"
+    ExpiresByType image/x-icon "access 1 year"
+    ExpiresDefault "access 1 month"
+</IfModule>
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php7_module>
+   php_flag display_errors Off
+   php_value max_execution_time 300
+   php_value max_input_time 100
+   php_value max_input_vars 1000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression On
+</IfModule>
+<IfModule lsapi_module>
+   php_flag display_errors Off
+   php_value max_execution_time 300
+   php_value max_input_time 100
+   php_value max_input_vars 1000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression On
+</IfModule>
+# END cPanel-generated php ini directives, do not edit
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php7_module>
+   php_flag display_errors Off
+   php_value max_execution_time 3000
+   php_value max_input_time 1000
+   php_value max_input_vars 10000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression Off
+</IfModule>
+<IfModule lsapi_module>
+   php_flag display_errors Off
+   php_value max_execution_time 3000
+   php_value max_input_time 1000
+   php_value max_input_vars 10000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression Off
+</IfModule>
+# END cPanel-generated php ini directives, do not edit
+
+# BEGIN cPanel-generated php ini directives, do not edit
+# Manual editing of this file may result in unexpected behavior.
+# To make changes to this file, use the cPanel MultiPHP INI Editor (Home >> Software >> MultiPHP INI Editor)
+# For more information, read our documentation (https://go.cpanel.net/EA4ModifyINI)
+<IfModule php7_module>
+   php_flag display_errors Off
+   php_value max_execution_time 3000
+   php_value max_input_time 1000
+   php_value max_input_vars 10000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression On
+</IfModule>
+<IfModule lsapi_module>
+   php_flag display_errors Off
+   php_value max_execution_time 3000
+   php_value max_input_time 1000
+   php_value max_input_vars 10000
+   php_value memory_limit 256M
+   php_value post_max_size 128M
+   php_value session.gc_maxlifetime 1440
+   php_value session.save_path "/var/cpanel/php/sessions/ea-php73"
+   php_value upload_max_filesize 64M
+   php_flag zlib.output_compression On
+</IfModule>
+# END cPanel-generated php ini directives, do not edit
+
+# php -- BEGIN cPanel-generated handler, do not edit
+# Set the “ea-php73” package as the default “PHP” programming language.
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php73 .php .php7 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit

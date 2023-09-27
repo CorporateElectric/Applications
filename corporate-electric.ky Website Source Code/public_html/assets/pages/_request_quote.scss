@@ -1,0 +1,55 @@
+.requestquote-page{
+    position: relative;
+    z-index: 2;
+    .container{
+        max-width: 1320px;
+        .container{ 
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+    .request-content{
+        max-width: 1000px;
+        margin: 0 auto 40px;
+        text-align: center;
+        @media(max-width:767px){
+            margin-bottom: 20px;
+        }
+        .title{
+            font-size: 36px;
+            color: $ac_black;
+            margin-bottom: 15px;
+            @media(max-width:1499px){
+                font-size: 26px;
+            }
+            @media(max-width:767px){
+                font-size: 20px;
+            }
+        }
+        .short_desc{
+            font-family:Rubik,sans-serif;
+            font-size:19px;
+            font-weight:300;
+            color:lighten($ac_black,44%);
+            line-height: 130%;
+            display: block;
+            @media(max-width:1499px){
+                font-size: 16px;
+            }
+        }
+    }
+    .form{
+        padding: 40px;
+        // background-color: #f2f4f7;
+        @media(max-width:767px){
+            padding:20px 0;
+        }
+        .ac-label{
+            color: lighten($ac_black,50%);
+            white-space: normal;
+        }
+        .ac-btn{
+            min-width: 150px;
+        }
+    }
+}

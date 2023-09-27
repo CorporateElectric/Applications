@@ -1,0 +1,129 @@
+.services_section{
+	width:100%;
+	overflow:hidden;
+	position:relative;
+	padding: 192px 0 100px;
+	@media (max-width: 1499px){
+		padding: 100px 50px;
+	}
+	@media (max-width: 1199px){
+		padding: 50px 0 25px;
+	}
+	&:before{
+		position: absolute;
+		content: '';
+		width: 100%;
+		height: 709px;
+		background-color: #F2F4F7;
+		top: 0;
+		left: 0;
+	}
+	.container{
+		max-width:1330px;
+	}
+	.title{
+		font-size:50px; 
+		font-weight:600;
+		color: $ac_black;
+		@media(max-width:1499px){
+			font-size: 36px;
+		}
+		@media(max-width:1199px){
+			font-size: 26px;
+			margin-bottom: 15px;
+		}
+		span{
+			display: block;
+			@include css3-prefix('transform', translateY(100%) rotateX(-180deg));
+			opacity: 0;
+			transition: opacity .8s cubic-bezier(.215,.61,.355,1),transform .8s cubic-bezier(.215,.61,.355,1);
+ 			&.is-inview{
+				@include css3-prefix('transform',none);
+				opacity: 1;
+			}
+		}
+	}
+	.short_desc{
+		font-size:26px;
+		color:lighten($ac_black, 30%);
+		line-height:150%;
+		margin-bottom: 40px;
+		font-weight: 400;
+		letter-spacing: -1.36px;
+		@media(max-width:1499px){
+			font-size: 22px;
+		}
+		@media(max-width:1199px){
+			font-size: 18px;
+			margin-bottom: 0;
+		}
+	}
+	
+	.thumbnail-container{
+		padding-bottom:152.444%;
+		// background:#000;
+		@media(max-width:568px){
+			padding-bottom:150%;
+		}
+
+		img{
+			width:100%;
+			height:100%;
+			object-fit: cover;
+			@include css3-prefix ('transition','all .5s ease-in-out 0s');
+		}
+		.ser-images a{
+			&:before{
+			content: '';
+			position: absolute;
+			top: 0;
+			right: 0;
+			left: 0;
+			bottom: 0;
+			height: 100%;
+			width: 100%;
+			z-index: 1;
+			display: block;
+			background-color:rgba(0, 0, 0, 0.4);
+			}	
+		}
+	}
+
+	.image{
+		.link{
+			font-size:24px;
+			font-weight:500;
+			color:#fff;
+			bottom:45px;
+			left:0;
+			z-index:111;
+			position:absolute;
+			line-height: 140%;
+			padding: 0 37px;
+		}
+	}
+
+	.owl-stage{
+		counter-reset: count;
+		.item{
+			counter-increment: count;
+			&::after {
+				position: absolute;
+				content: "" counter(count, decimal-leading-zero) ".";
+				left: 37px;
+				top: 41px;
+				font-size: 28px;
+				font-weight: 400;
+				color: $ac_white;
+				z-index: 1;
+			}
+		}
+	}
+	.ac-btn{
+		display: table;
+		margin: 60px auto 0;
+		@media(max-width:1199px){
+			margin-top: 30px;
+		}
+	}
+}

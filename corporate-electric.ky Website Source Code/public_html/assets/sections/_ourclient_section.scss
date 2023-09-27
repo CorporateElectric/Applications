@@ -1,0 +1,143 @@
+.ourclient_section {
+	padding: 205px 0 170px;
+	@media (max-width: 1499px){
+		padding: 50px 0 100px;	
+	}
+	@media (max-width: 1199px){
+		padding: 25px 0 50px;
+	}
+	.container {
+		width: 100%;
+		max-width: 1320px;
+	}
+	.sm-title{
+		.service_title{
+			font-size: $ac_fs_d_50;
+			font-family: $ac_ff_one;
+			font-weight: $ac_fw_sb;
+			letter-spacing: -2.2px;
+			color: $ac_black;
+			max-width: 642px;
+    		width: 100%;
+			@media (max-width: 1499px){
+				font-size: $ac_fs_6xl + 1px;
+				letter-spacing: 0px;
+			}
+			@media (max-width: 1199px){
+				font-size: $ac_fs_3xl + 2px;
+				max-width: 100%;
+			}
+		}
+		.sm-subtitle{
+			font-size: $ac_fs_3xl + 2px;
+		    font-weight: $ac_fw_r;
+		    letter-spacing: -1.14px;
+		    color: $ac_gr_light;
+		    max-width: 642px;
+		    line-height: 140%;
+    		width: 100%;
+		    @media (max-width: 1499px){
+				font-size: $ac_fs_2xl;
+				letter-spacing: 0px;	
+			}
+			@media (max-width: 1199px){
+				font-size: $ac_fs_lg;
+				margin-top: 5px;	
+			}
+			@media (max-width: 767px){
+				font-size: $ac_fs_md;
+			}
+		}
+	}
+	.owl-theme .owl-dots{
+		button:focus{
+			outline: none;
+		}
+		span{
+			width: 10px;
+		    height: 10px;
+		    margin: 4px 5px;
+		}
+		.owl-dot.active span{
+		background: $ac_black;
+		}
+		.owl-dot:hover span{
+		background: $ac_black;
+		}
+	}
+	#first_slider{
+		margin-top: 113px;
+		margin-left: 120px;
+		@media (max-width: 1199px){
+			margin-left: 0;
+			margin-top: 50px;
+		}
+		@media (max-width: 767px){
+			margin-top: 20px;
+		}
+		.item{
+			.thumbnail_container{
+				padding-bottom: 50%;
+			    overflow: hidden;
+			    position: relative;
+			    width: 100%;
+				.thumbnail{
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					padding: 0;
+					margin: 0;
+				    display: block;
+				    border: none;
+					img{
+						width: auto;
+						transition: all .5s ease;
+						@media (min-width: 1200px){
+							&:hover{
+								transform: scale(1.1);
+							}
+						}
+					}
+				}
+				+.thumbnail_container{
+					margin-top: 20px;
+				}
+			}
+		}
+	}
+	#second_slider{
+		margin-left: 120px;
+		@media (max-width: 1199px){
+			margin-left: 0;
+		}
+		.item{
+			.thumbnail_container{
+				padding-bottom: 50%;
+			    overflow: hidden;
+			    position: relative;
+			    width: 100%;
+				.thumbnail{
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					padding: 0;
+					margin: 0;
+				    display: block;
+				    border: none;
+					img{
+						width: auto;
+						transition: all .5s ease;
+						@media (min-width: 1200px){
+							&:hover{
+								transform: scale(1.1);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+

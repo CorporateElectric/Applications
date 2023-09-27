@@ -1,0 +1,35 @@
+/*  Material Color Generator: http://mcg.mbitson.com/ */
+
+$ac_white: 				#FFFFFF;
+$ac_black: 				#000000;
+$ac_red: 				#ff0000; 
+$ac_r: 					#F81F33; 
+$ac_green: 				#008000;
+
+$ac_g:					#919191;
+$ac_grey:               #C9CFD6;
+$ac_gr_light:			#4E4E4E;
+$ac_br:					#E6E7E8;
+$ac_bg:					#F2F4F7;
+$ac_bg_clr:				#F9F9F9;
+$ac_light:				#707070;
+
+$ac_m: 					#848484;
+$ac_a: 					#ED192D; 
+$ac_b: 					#231F20;
+
+$theme: default;
+
+@if $theme==Light {
+    $ac_a:	#464749; 
+    $ac_b:	#2A88BE;
+}
+@else if $theme==Dark {
+    $ac_a:	green; 
+    $ac_b:	red;
+} 
+@else {
+    // default
+}
+
+// #00a0e4

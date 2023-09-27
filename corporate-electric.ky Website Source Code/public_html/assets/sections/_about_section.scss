@@ -1,0 +1,36 @@
+.about_sec{
+	padding:100px 0;
+	position: relative;
+	z-index: 1;
+	@media (max-width:1024px){		
+		padding:60px 0;
+	}	
+	@media (max-width:767px){
+		padding:35px 0;	
+	}
+	.container {
+		max-width: 1275px;
+		width: 100%;
+	}
+	.info {
+		line-height: 160%;
+		margin-bottom: 35px;
+		@media (max-width:767px){
+			margin-bottom: 25px;
+		}
+	}
+	.ac-btn {
+		min-width: 360px;	
+		@media (max-width:1199px){
+			min-width: 250px;		
+		}
+		@media (max-width:767px){
+			min-width: 200px;		
+		}	
+	}
+}
+
+
+
+
+

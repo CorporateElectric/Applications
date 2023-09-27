@@ -1,0 +1,121 @@
+.blog_sec{
+	position: relative;
+	z-index: 1;
+	.container{
+		width: 100%;
+		max-width: 1330px;
+	}
+	.container-fluid{
+		width: 100%;
+		padding-left: 299px;
+		padding-right: 0;
+		@media(max-width: 1199px){
+			padding-right: 15px;
+    		padding-left: 15px;
+		}
+	}
+	.same_title{
+		padding-bottom: 70px;
+		.title_div{
+			font-family: $ac_ff_one;
+			font-size: $ac_fs_7xl;
+			font-weight: $ac_fw_m;
+			color: $ac_black;
+			letter-spacing: -2.2px;
+			@media (max-width: 767px){
+				font-size: $ac_fs_6xl + 5px;
+			}
+		}
+		.client_project{
+			p{
+				font-family: $ac_ff_one;
+				font-size: $ac_fs_4xl;
+				font-weight: $ac_fw_r;
+				color: $ac_gr_light;
+				letter-spacing: -0.78px;
+				margin-top: 10px;
+				@media (max-width: 767px){
+					font-size: $ac_fs_3xl;
+				}
+				@media (max-width: 576px){
+					font-size: $ac_fs_xl;
+					padding-bottom: 15px;
+				}
+			}
+		}
+	}
+	.blog_slide{
+		.owl-theme .owl-nav{
+			top: -19%;
+			left: 40%;
+			button{
+				height: 48px;
+			    width: 48px;
+			    background: $ac_white;
+			    border-radius: 50%;
+			    border: 1px solid $ac_light;
+			}
+			button:focus{
+				outline: 0;
+			}
+			.owl-next{
+				right: 75px;
+			}
+			.owl-prev{
+				right: 137px;
+				left: auto;
+			}
+		}
+		.owl-theme .owl-nav [class*=owl-]:hover{
+			background-color: $ac_white;
+			color: #707070;
+		}
+		.blog_post{
+			.blog_img{
+				.thumbnail-container{
+					padding-bottom: 100%;
+				    overflow: hidden;
+				    position: relative;
+				    width: 100%;
+					.thumbnail{
+						position: absolute;
+						width: 100%;
+						height: 100%;
+						padding: 0;
+						margin: 0;
+					    display: block;
+					    border: none;
+					}
+					.img_title{
+						background: $ac_black;
+						position: absolute;
+						bottom: 53px;
+						left: 71px;
+						padding: 13px;
+						z-index: 1;
+						@media(max-width: 1199px){
+							bottom: 25px;
+							left: 25px;
+						}
+						a{
+							color: $ac_white;
+							font-size: $ac_fs_md;
+							font-family: $ac_ff_two;
+							letter-spacing: 0.78px;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+.blog_sec:before{
+	content: '';
+	position: absolute;
+	top: 300px;
+	right: 0;
+	left: 0;
+	bottom: 0;
+	z-index: 0;
+	background-color: $ac_bg;
+}

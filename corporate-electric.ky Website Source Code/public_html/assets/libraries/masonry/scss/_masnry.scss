@@ -1,0 +1,14 @@
+.grid {
+	.grid-sizer{
+	    width: 33.3%;
+	}
+  	.grid-item {
+	  	padding: 5px;		
+		width: 33.33%;
+		float: left;
+    	overflow: hidden;
+    	@media(max-width: 568px){
+    		width: 50%;
+    	}
+	}
+}

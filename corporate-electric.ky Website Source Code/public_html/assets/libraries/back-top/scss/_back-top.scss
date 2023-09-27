@@ -1,0 +1,45 @@
+body #back-top {
+    position: fixed;
+    bottom: 15px; 
+    right: 12px;
+    cursor: pointer;
+    z-index: 1;//999
+    @media(max-width: 1199px){
+        display: none !important;
+    }
+    i,span{
+        background-color: $ac_a;
+        @include css3-prefix ('border-radius','250px');
+        font-size: $ac_fs_lg;
+        line-height: 40px;
+        color: $ac_white;
+        text-align: center;
+        @include css3-prefix ('transition','all 0.5s ease 0s');
+        display: block;
+        height: 40px;
+        width: 40px;
+        border-radius: 4px;
+        &:hover{
+            background-color: $ac_b;
+        }        
+    }
+    @media (max-width:767px) {
+         bottom: 25px;
+         right: 10px;
+         i {display: none;}
+    }
+}
+
+.back-to-top {
+    opacity: 0;
+    visibility: hidden;
+    &.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+[data-direction="down"]{
+    .back-to-top {
+    opacity: 1;
+    visibility: visible;}
+}

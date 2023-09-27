@@ -1,0 +1,126 @@
+/* Pagination S */
+    .pagination{
+        margin: 0 !important;
+        padding: 0;
+        list-style: none;
+        display: flex!important;
+        align-items: center;
+        justify-content: center;
+        margin-top: 30px !important;
+        @include css3-prefix-last ('display', 'inline-flex');
+        li.page-item{
+            margin: 0 10px;
+            padding: 0;
+            display: inline;
+            text-align: center;
+            @media(max-width: 767px){
+                margin: 0 6px;
+            } 
+            &:before{
+                content: none;
+            }           
+            .page-link{
+                position: relative;
+                float: left;
+                padding: 0;
+                margin-left: -1px;
+                width: 55px;
+                height: 45px;
+                line-height: 45px;
+                font-size: 18px;
+                font-weight: $ac_fw_r;
+                color: $ac_black;
+                background-color: $ac_bg;
+                border: 1px solid $ac_bg;
+                border-radius: 8px;
+                box-shadow: none;
+                @include css3-prefix ('transition','all 0.5s ease-in-out');
+                @media (max-width: 575px){
+                    width: 50px;
+                    height: 40px;
+                    line-height: 40px;
+                    font-size: 15px;
+                }
+                // &:after{
+                //     position: absolute;
+                //     content: '';
+                //     width: 0;
+                //     height: 2px;
+                //     left: 0;
+                //     bottom: 0;
+                //     background-color: $ac_b;
+                //     @include css3-prefix('transition', all .5s ease-in-out);
+                // }
+                i{
+                    font-size: $ac_fs_sm;
+                    font-weight: $ac_fw_r;
+                    color: $ac_m;
+                }                
+            }
+            &.active,&:hover{
+                color: $ac_black;
+                .page-link{
+                    background-color: $ac_black;
+                    border: 1px solid $ac_black;
+                    color: $ac_bg;
+                    &:after{
+                        width: 100%;
+                    }
+                    &:before{
+                        color: $ac_bg !important;
+                    }
+                }
+            }
+            &:first-child, &:last-child{
+                .page-link{
+                    border-radius: 8px;
+                    padding: 0 15px;
+                    font-size: $ac_fs_xl;
+                    color: $ac_black;
+                    box-shadow: none;
+                    width: 55px;
+                    height: 45px;
+                    line-height: 45px;
+                    font-size: 18px;
+                    font-weight: 400;
+                    @media (max-width: 575px){
+                        width: 50px;
+                        height: 40px;
+                        line-height: 40px;
+                        font-size: 15px;
+                    }
+                }
+            }
+            &:first-child{
+                .page-link{
+                    &:before{
+                        content: '\f104';
+                        position: absolute;
+                        left: 0;
+                        right: 0;
+                        text-align: center;
+                        top: 50%;
+                        transform: translate(0,-50%);
+                        font-family:FontAwesome;
+                        color: $ac_black; 
+                    }
+                }                
+            }
+            &:last-child{
+                .page-link{
+                    &:before{
+                        content: '\f105';
+                        position: absolute;
+                        left: 0;
+                        right: 0;
+                        text-align: center;
+                        top: 50%;
+                        transform: translate(0,-50%);
+                        font-family:FontAwesome;
+                        color: $ac_black; 
+                    }
+                }
+            }
+        }
+    }
+/* Pagination E */
